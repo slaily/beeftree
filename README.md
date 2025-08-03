@@ -1,4 +1,4 @@
-# beeftree: A database storage engine from ccratch
+# beeftree: A database storage engine from scratch
 
 > A hands-on journey into database internals, implementing a page-based storage manager, buffer pool, and B-Tree index in pure Python.
 
