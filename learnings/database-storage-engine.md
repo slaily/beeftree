@@ -1,4 +1,4 @@
-# B-Tree Database Internals - Learning Guide
+# Building a Database Storage Engine: A Learning Guide
 
 ## Learning Objectives
 - [X] Understand B-tree structure, properties, and mathematical foundations
@@ -796,8 +796,7 @@ Benchmark and optimize your B-tree implementation:
 2. What are the trade-offs between read and write performance in B-trees?
 3. How can bulk loading be more efficient than individual insertions?
 
-## Final Project
-**Build a Complete Database Storage Engine**
+## Project Goal: A Complete Database Storage Engine
 
 Create a fully functional database storage engine that demonstrates mastery of all concepts:
 
