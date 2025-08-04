@@ -951,17 +951,6 @@ Create a fully functional database storage engine that demonstrates mastery of a
 ### Core Requirements
 1. **B+tree index implementation** with all CRUD operations
 2. **Page-based storage manager** with persistence and caching
-3. **Simple SQL-like query interface** supporting SELECT, INSERT, UPDATE, DELETE
-4. **Transaction support** with basic ACID properties
-5. **Multiple indexes** on the same table
-6. **Range queries and aggregations** (COUNT, SUM, MIN, MAX)
-
-### Deliverables
-- Complete Python implementation (estimated 1000-1500 lines)
-- Comprehensive test suite covering edge cases
-- Performance benchmarks comparing different configurations
-- Documentation explaining design decisions
-- Demo script showing real-world usage scenarios
 
 ### Assessment Criteria
 - **Correctness**: All B-tree properties maintained under all operations
