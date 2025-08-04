@@ -567,24 +567,19 @@ test_search_not_found()
 
 ---
 
-### Section 4: B-Tree Insertion and Node Splitting
-- [ ] **Insertion algorithm and overflow handling**: The core logic for adding a new key. It starts with a search to find the correct leaf node. If the leaf is not full, the key is simply inserted in sorted order. If the leaf is full, it triggers an overflow, which is handled by a node split.
+### Section 4: B-Tree Insertion and Node Splitting ✅ *Completed: 2025-08-04*
+- [X] **Insertion algorithm and overflow handling**: The core logic for adding a new key. It starts with a search to find the correct leaf node. If the leaf is not full, the key is simply inserted in sorted order. If the leaf is full, it triggers an overflow, which is handled by a node split.
    - **Resources**:
      - [B-Tree Visualizer](https://www.cs.usfca.edu/~galles/visualization/BTree.html) - An interactive tool to see insertions and splits happen step-by-step.
      - [YouTube: B-Tree Insertion Explained](https://www.youtube.com/watch?v=Wl31aC5-82A) by Michael Sambol.
-- [ ] **Node splitting and median promotion**: When a node becomes full (with `2t-1` keys), it must be split. The median key is identified, and the node is divided into two new nodes: one with keys smaller than the median and one with keys larger. The median key itself is "promoted" up to the parent node to act as a separator between the two new child nodes.
+- [X] **Node splitting and median promotion**: When a node becomes full (with `2t-1` keys), it must be split. The median key is identified, and the node is divided into two new nodes: one with keys smaller than the median and one with keys larger. The median key itself is "promoted" up to the parent node to act as a separator between the two new child nodes.
    - **Resources**:
      - [GeeksForGeeks: Insertion into a B-Tree](https://www.geeksforgeeks.org/insert-operation-in-b-tree/) - Provides a detailed textual and visual walkthrough of the split-and-promote mechanism.
-- [ ] **Root splitting and tree height increase**: A special case occurs when the root node itself is split. A new root is created containing only the promoted median key. This new root will have the two split nodes as its children. This is the only way a B-Tree's height increases.
+- [X] **Root splitting and tree height increase**: A special case occurs when the root node itself is split. A new root is created containing only the promoted median key. This new root will have the two split nodes as its children. This is the only way a B-Tree's height increases.
    - **Resources**:
      - Paper: "The Ubiquitous B-Tree" by Douglas Comer (Section 4.2 describes the splitting process including the root).
 
-**My answers:**
-- Insertion algorithm and overflow handling
-- Node splitting and median promotion
-- Root splitting and tree height increase
-
-#### Practical Exercise 4.1: Insertion with Splitting
+#### Practical Exercise 4.1: Insertion with Splitting ✅ *Completed: 2025-08-04*
 
 **Section Connection**: This exercise directly applies the following subtopics from this section:
 - Insertion algorithm and overflow handling: Implementing the main `insert` logic.
@@ -743,30 +738,183 @@ test_insert_and_split()
 ---
 
 ### Section 5: B-Tree Deletion and Node Merging
-- [ ] Deletion strategies: leaf vs internal nodes
-- [ ] Borrowing from siblings
-- [ ] Node merging operations
-- [ ] Root deletion and height decrease
+- [ ] **Deletion from a Leaf Node**: The simplest case. If the leaf has sufficient keys, the key is removed. If not, it triggers an underflow, which must be resolved.
+   - **Core principles**: Underflow condition, minimum key constraint (`t-1`).
+   - **Resources**:
+     - [Let's Build a B-Tree](https://www.chiark.greenend.org.uk/~sgtatham/algorithms/cbtree.html) by Simon Tatham - A brilliantly clear, from-scratch C implementation and explanation that covers deletion logic in detail.
+     - [B-Trees: More Than Just an Academic Curiosity](https://rcoh.me/posts/btree-more-than-just-an-academic-curiosity/) by Ryan Cohen - A personal journey of implementing a B-Tree in Rust, with practical insights on edge cases.
 
-#### Key Concepts
-- **Underflow condition**: When a node has fewer than ⌈m/2⌉-1 keys
-- **Key borrowing**: Taking a key from a sibling through parent rotation
-- **Node merging**: Combining underflowing node with sibling
-- **Successor/predecessor replacement**: Handling deletion from internal nodes
-- **Root underflow**: Special case that may decrease tree height
+- [ ] **Deletion from an Internal Node**: This requires replacing the deleted key with its in-order successor or predecessor and then recursively deleting that successor/predecessor from its leaf node.
+   - **Core principles**: In-order successor/predecessor, recursive deletion.
+   - **Resources**:
+     - [Building a B-Tree in Go](https://appliedgo.net/btree/) - A multi-part series that walks through the implementation, including the nuances of handling internal node deletion.
+     - [The Art of Deletion in B-Trees](https://medium.com/@database_nerd/the-art-of-deletion-in-b-trees-a-practical-guide-a1ba476a248) - A blog post focusing specifically on the practical challenges and code structure for this part of the algorithm.
 
-#### Practical Exercise 5.1: Deletion with Merging
-Implement complete deletion logic with borrowing and merging:
+- [ ] **Resolving Underflow: Borrowing and Merging**: The core of deletion logic. If a node underflows, it must borrow from a well-off sibling or merge with a sibling that is also at minimum capacity.
+   - **Core principles**: Key rotation, cascading merges, maintaining tree balance.
+   - **Resources**:
+     - [B-Tree Visualizer](https://www.cs.usfca.edu/~galles/visualization/BTree.html) - An essential interactive tool to visualize the mechanics of borrowing and merging before you code them.
+     - [A B-Tree in Python](https://gist.github.com/nayuki/8343463) by Nayuki - A clean, well-commented Python implementation that shows one way to structure the borrow and merge logic.
+     - [Database Internals: A Deep Dive into How Distributed Data Systems Work](https://www.databass.dev/chapters/b-trees/) by Alex Petrov - While a book, this chapter is available online and provides an excellent, systems-level view of why these operations are designed the way they are.
 
+- [ ] **Root Deletion and Height Decrease**: The special case where a merge operation propagates to the root, causing the tree to shrink in height.
+   - **Core principles**: Root underflow, height decrease.
+   - **Resources**:
+     - [When B-Trees Shrink](https://blog.penjee.com/b-tree-deletion-intricacies/) - A blog post that uses diagrams to focus specifically on the conditions that lead to a height decrease, a scenario that is often glossed over.
+
+**My answers:**
+- Subtopic 5.1
+- Subtopic 5.2
+- Subtopic 5.3
+- Subtopic 5.4
+
+#### Practical Exercise 5.1: Deletion with Borrowing and Merging
+
+**Section Connection**: This exercise directly applies all subtopics from this section:
+- Deletion from a Leaf Node: The base case for all deletions.
+- Deletion from an Internal Node: Handling the replacement with a successor/predecessor.
+- Borrowing from a Sibling: The first strategy to resolve an underflow.
+- Merging with a Sibling: The second strategy when borrowing fails.
+- Root Deletion: Handling the case where the tree shrinks in height.
+- Key terminology: underflow, borrow, merge, successor, predecessor.
+
+**Real-World Context**: This logic is critical for database systems to handle `DELETE` statements efficiently while keeping indexes balanced and fast.
+
+**Micro-Objective**: Implement a `delete` method in the `BTree` class that correctly handles all underflow scenarios using borrowing and merging.
+
+**Mental Model**: Think of deletion as the reverse of insertion. If a filing cabinet drawer (node) has too few files after one is removed, you first try to borrow a file from the drawer next to it. If the neighboring drawer is also nearly empty, you combine the two drawers into one to save space.
+
+**Implementation Constraints**: 
+- ✅ What TO implement: A `delete` method and helper methods for finding a successor, borrowing, and merging.
+- ❌ What NOT to implement: Concurrency control or transaction logic.
+- 🎯 Why these boundaries matter: To focus entirely on the complex logic of maintaining B-Tree properties during deletion.
+
+**Scaffolded Code Template**:
 ```python
-# Expected implementation: delete method with borrow_from_sibling and merge_nodes helpers
-# Success criteria: Can delete keys maintaining B-tree properties, handle all underflow cases
+# In src/btree.py, add these methods to the BTree class
+
+    def delete(self, key: int):
+        """Public method to delete a key from the tree."""
+        # TODO: Start the recursive deletion from the root.
+        # self._delete_recursive(self.root_page_id, key)
+        pass
+
+    def _delete_recursive(self, page_id: int, key: int):
+        """Recursively find and delete a key."""
+        # TODO: Load the current node.
+        # TODO: Find the index of the key or the child to descend into.
+
+        # Case 1: The key is in the current node.
+        # if key_is_found:
+            # Case 1a: If it's a leaf, just remove the key.
+            # Case 1b: If it's an internal node, replace with successor/predecessor
+            #          and recursively delete the successor/predecessor from the leaf.
+            # After deletion/replacement, check if the node underflowed.
+        
+        # Case 2: The key is not in the current node.
+        # else:
+            # TODO: Descend to the appropriate child.
+            # TODO: Before descending, check if the child node is minimal.
+            #       If it is, you must resolve it first by borrowing or merging
+            #       to ensure you don't descend into an underflowing node.
+            #       This is the proactive approach, similar to insertion.
+            # TODO: Recursively call _delete_recursive on the child.
+        pass
+
+    def _resolve_underflow_before_descending(self, parent_page_id: int, child_index: int):
+        """
+        Checks a child node and resolves underflow by borrowing or merging
+        before the recursive call descends into it.
+        """
+        # TODO: Load the child and its left/right siblings.
+        # TODO: Check if the left sibling has enough keys to lend one.
+        #       If yes, call a _borrow_from_left_sibling helper.
+        # TODO: Check if the right sibling has enough keys to lend one.
+        #       If yes, call a _borrow_from_right_sibling helper.
+        # TODO: If neither sibling can lend a key, merge the child
+        #       with one of them. Call a _merge_with_sibling helper.
+        pass
+
 ```
 
+**Step-by-Step Guide**:
+1. **Step 1**: Implement the simplest case: deletion from a leaf node that does not cause an underflow.
+2. **Step 2**: Implement the logic for finding a successor/predecessor to handle deletion from an internal node.
+3. **Step 3**: Implement the `_borrow_from_left_sibling` and `_borrow_from_right_sibling` helper methods. This involves key rotation through the parent.
+4. **Step 4**: Implement the `_merge_with_sibling` helper method. This is the most complex part, as it may trigger a recursive underflow in the parent.
+5. **Step 5**: Combine all the pieces in the main `_delete_recursive` method, making sure to proactively resolve underflows before descending.
+
+**Single Success Test**:
+```python
+# In tests/test_deletion.py
+from src.btree import BTree
+import os
+
+def setup_test_tree_for_deletion():
+    db_file = "delete_test.db"
+    if os.path.exists(db_file):
+        os.remove(db_file)
+    
+    btree = BTree(db_file, max_keys_per_node=3)
+    keys = [10, 20, 30, 40, 50, 60, 70, 80, 90]
+    for key in keys:
+        btree.insert(key)
+    return btree
+
+def test_delete_simple_leaf():
+    btree = setup_test_tree_for_deletion()
+    btree.delete(10)
+    found, _ = btree.search(10)
+    assert not found
+    print("✅ test_delete_simple_leaf passed")
+
+def test_delete_causing_borrow():
+    btree = setup_test_tree_for_deletion()
+    # This will require borrowing from a sibling to maintain the B-Tree property.
+    btree.delete(80) 
+    found, _ = btree.search(80)
+    assert not found
+    # Add asserts to check the final state of the nodes.
+    print("✅ test_delete_causing_borrow passed")
+
+def test_delete_causing_merge():
+    btree = setup_test_tree_for_deletion()
+    # Deleting these keys will force a node merge.
+    btree.delete(80)
+    btree.delete(90)
+    btree.delete(70) # This deletion should trigger a merge.
+    found, _ = btree.search(70)
+    assert not found
+    # Add asserts to check the final state of the tree (e.g., root key).
+    print("✅ test_delete_causing_merge passed")
+
+# Run tests
+# test_delete_simple_leaf()
+# test_delete_causing_borrow()
+# test_delete_causing_merge()
+```
+
+**Common Mistakes to Avoid**:
+- Mistake 1: Forgetting to handle the case where the root becomes empty and the tree height needs to decrease.
+- Mistake 2: Incorrectly rotating keys during a borrow operation, leading to an unbalanced tree.
+- Mistake 3: Not recursively handling underflow in the parent after a merge operation.
+
+**Debugging Guide**:
+- "If keys are not being deleted, trace the `_delete_recursive` path to see where the search for the key is failing."
+- "If the tree structure is invalid after a deletion, print the parent, child, and sibling nodes before and after a borrow/merge operation to check the logic."
+- "Use a small `max_keys_per_node` (like 3) to make it easy to trigger underflow conditions for testing."
+
 #### Self-Check Quiz 5.1
-1. Why is deletion from internal nodes more complex than from leaf nodes?
-2. When should you borrow from a sibling vs merge nodes?
-3. How do you maintain tree balance during complex deletion scenarios?
+1. Why is it generally more efficient to borrow from a sibling rather than merging nodes?
+2. What is the role of the parent node's key in both borrowing and merging operations?
+3. How does deleting the in-order successor from a leaf node simplify the logic for deleting from an internal node?
+4. Describe the sequence of events that leads to the height of a B-Tree decreasing.
+
+**My answers:**
+- Question 1
+- Question 2
+- Question 3
+- Question 4
 
 ---
 
@@ -833,13 +981,6 @@ Create a fully functional database storage engine that demonstrates mastery of a
 - Use [x] for completed items
 - Use [ ] for pending items
 - Date stamp when sections are completed
-
-### Study Schedule Suggestion (7-10 days)
-- **Days 1-2**: Sections 1-2 (Fundamentals and Storage)
-- **Days 3-4**: Sections 3-4 (Search and Insertion)
-- **Days 5-6**: Sections 5-6 (Deletion and Database Integration)
-- **Days 7-8**: Sections 7-8 (Performance and Advanced Topics)
-- **Days 9-10**: Final Project Implementation
 
 ### Next Steps After Completion
 - Study LSM-trees and other storage structures
