@@ -7,168 +7,152 @@ from collections import OrderedDict
 from .node import Node
 
 
-class Page:
-    def __init__(self, page_id: int, page_size: int = 4096):
-        self.id = page_id
-        self.size = page_size
-        self.data = {}
-        self.is_dirty = False
-        self.access_count = 0
+class DiskPage:
+    def __init__(self, page_number: int, byte_size: int = 4096):
+        self.page_number = page_number
+        self.byte_size = byte_size
+        self.content = {}
+        self.has_unsaved_changes = False
 
-    def serialize(self) -> bytes:
-        string_data = dumps(self.data)
-        encoded_data = string_data.encode()
+    def to_bytes(self) -> bytes:
+        """Converts the page content to a byte string for disk storage."""
+        string_content = dumps(self.content)
+        return string_content.encode()
 
-        return encoded_data
-
-    def deserialize(self, data: bytes) -> dict:
-        """Decodes bytes into a dictionary, handling potential errors."""
+    def from_bytes(self, byte_data: bytes):
+        """Loads page content from a byte string read from disk."""
         try:
             # Strip trailing null bytes used for padding before decoding.
-            decoded_data = data.decode().rstrip("\x00")
-            return loads(decoded_data) if decoded_data else {}
+            decoded_data = byte_data.decode().rstrip("\x00")
+            self.content = loads(decoded_data) if decoded_data else {}
         except (UnicodeDecodeError, JSONDecodeError):
-            # If data is corrupted or not valid JSON, return an empty dict.
-            return {}
+            # If data is corrupted or not valid JSON, treat it as empty.
+            self.content = {}
 
-    def can_fit(self, node_data: dict) -> bool:
-        serialized_data = dumps(node_data).encode()
+    def can_fit(self, data_to_write: dict) -> bool:
+        """Checks if the serialized data can fit within the page's byte size."""
+        return len(dumps(data_to_write).encode()) <= self.byte_size
 
-        return len(serialized_data) <= self.size
 
-
-class PageManager:
+class StorageManager:
     def __init__(
         self,
-        data_file: str,
-        buffer_pool_size: int = 100,
+        database_file_path: str,
+        max_cached_pages: int = 100,
         page_size: int = 4096,
         next_page_id: int = 1,
     ):
         """
-        Manages pages in memory and on disk.
-
-        Args:
-            data_file: Path to the database file.
-            buffer_pool_size: Maximum number of pages to hold in memory.
-            page_size: The size of each page in bytes.
-            next_page_id: The next available page ID to allocate.
+        Manages reading and writing pages to a database file, with an in-memory cache.
         """
-        self.data_file = data_file
-        self.buffer_pool_size = buffer_pool_size
-        self.buffer_pool: OrderedDict[int, Page] = OrderedDict()
+        self.database_file_path = database_file_path
+        self.max_cached_pages = max_cached_pages
+        self.page_cache: OrderedDict[int, DiskPage] = OrderedDict()
         self.page_size = page_size
         self.next_page_id = next_page_id
 
-        if not os.path.exists(data_file):
-            with open(data_file, "wb"):
+        if not os.path.exists(database_file_path):
+            with open(database_file_path, "wb"):
                 pass
 
-    def get_page(self, page_id: int) -> Optional[Page]:
-        """Get page from buffer pool or load from disk."""
-        if page_id in self.buffer_pool:
-            self.buffer_pool.move_to_end(page_id, last=True)
+    def fetch_page_from_cache_or_disk(self, page_number: int) -> Optional[DiskPage]:
+        """
+        Retrieves a page, first checking the cache and then loading from disk if necessary.
+        """
+        if page_number in self.page_cache:
+            self.page_cache.move_to_end(page_number, last=True)
+            return self.page_cache[page_number]
 
-            return self.buffer_pool[page_id]
+        if len(self.page_cache) >= self.max_cached_pages:
+            self._evict_page_from_cache()
 
-        if len(self.buffer_pool) >= self.buffer_pool_size:
-            self._evict_page()
-
-        page = self._read_page_from_disk(page_id)
-
+        page = self._read_page_from_disk(page_number)
         if page:
-            self.buffer_pool[page_id] = page
-
+            self.page_cache[page_number] = page
         return page
 
     def store_node(self, node: Node) -> int:
-        """Stores a B-tree node, allocating a new page ID if necessary."""
+        """Stores a B-tree node, allocating a new page number if necessary."""
         if node.page_id is None:
             node.page_id = self.next_page_id
             self.next_page_id += 1
 
-        self.store_page_data(node.page_id, node.serialize())
+        self.store_page_content(node.page_id, node.serialize())
         return node.page_id
 
-    def load_node(self, page_id: int) -> Optional[Node]:
-        """Load a B-tree node from storage."""
-        page_data = self.load_page_data(page_id)
-        if page_data:
-            return Node.deserialize(page_data)
+    def load_node(self, page_number: int) -> Optional[Node]:
+        """Loads a B-tree node from a specific page."""
+        page_content = self.load_page_content(page_number)
+        if page_content:
+            return Node.deserialize(page_content)
         return None
 
-    def store_page_data(self, page_id: int, data: dict) -> None:
-        """Stores a generic dictionary into a page."""
-        page = self.get_page(page_id)
+    def store_page_content(self, page_number: int, content: dict) -> None:
+        """Writes content to a specific page."""
+        page = self.fetch_page_from_cache_or_disk(page_number)
         if page is None:
-            page = Page(page_id)
-            self.buffer_pool[page_id] = page
+            page = DiskPage(page_number)
+            self.page_cache[page_number] = page
 
-        page.data = data
-        page.is_dirty = True
+        page.content = content
+        page.has_unsaved_changes = True
 
-    def load_page_data(self, page_id: int) -> Optional[dict]:
-        """Loads a generic dictionary from a page."""
-        page = self.get_page(page_id)
-        return page.data if page else None
+    def load_page_content(self, page_number: int) -> Optional[dict]:
+        """Reads content from a specific page."""
+        page = self.fetch_page_from_cache_or_disk(page_number)
+        return page.content if page else None
 
-    def flush_dirty_pages(self) -> None:
-        """Write all dirty pages to disk."""
-        for page in self.buffer_pool.values():
-            if not page.is_dirty:
-                continue
+    def save_all_unsaved_pages_to_disk(self) -> None:
+        """Writes all pages with unsaved changes from the cache to disk."""
+        for page in self.page_cache.values():
+            if page.has_unsaved_changes:
+                self._write_page_to_disk(page)
+                page.has_unsaved_changes = False
 
-            self._write_page_to_disk(page)
-            page.is_dirty = False
-
-    def _write_page_to_disk(self, page: Page) -> None:
-        """Write a single page to disk at the correct offset."""
-        with open(self.data_file, "r+b") as file:
-            offset = page.id * self.page_size
-            page_data = page.serialize()
+    def _write_page_to_disk(self, page: DiskPage) -> None:
+        """Writes a single page's content to the correct location in the database file."""
+        with open(self.database_file_path, "r+b") as file:
+            offset = page.page_number * self.page_size
+            page_bytes = page.to_bytes()
 
             # Pad the data to ensure it fills the entire page size.
-            if len(page_data) < self.page_size:
-                page_data = page_data.ljust(self.page_size, b"\x00")
+            if len(page_bytes) < self.page_size:
+                page_bytes = page_bytes.ljust(self.page_size, b"\x00")
 
             file.seek(offset)
-            file.write(page_data)
+            file.write(page_bytes)
             file.flush()
             os.fsync(file.fileno())
 
-    def _read_page_from_disk(self, page_id: int) -> Optional[Page]:
-        with open(self.data_file, "rb") as file:
-            offset = page_id * self.page_size
+    def _read_page_from_disk(self, page_number: int) -> Optional[DiskPage]:
+        """Reads a single page from the database file."""
+        with open(self.database_file_path, "rb") as file:
+            offset = page_number * self.page_size
             file.seek(offset)
             raw_data = file.read(self.page_size)
 
             if not raw_data:
                 return None
 
-            page = Page(page_id)
-            page.data = page.deserialize(raw_data)
-
+            page = DiskPage(page_number)
+            page.from_bytes(raw_data)
             return page
 
-    def _evict_page(self) -> None:
+    def _evict_page_from_cache(self) -> None:
         """
-        Evicts a page using a second-chance algorithm variant.
-
-        This loop prioritizes evicting clean pages to avoid disk I/O. Dirty
-        pages are written to disk and given a 'second chance' by being moved
-        to the end of the queue, making them less likely to be evicted soon.
+        Removes a page from the cache to make space, using a second-chance algorithm.
+        Clean pages are evicted first. Dirty pages are written to disk and kept.
         """
-        for _ in range(len(self.buffer_pool)):
-            page_id, page = self.buffer_pool.popitem(last=False)
+        for _ in range(len(self.page_cache)):
+            page_number, page = self.page_cache.popitem(last=False)
 
-            if page.is_dirty:
+            if page.has_unsaved_changes:
                 self._write_page_to_disk(page)
-                page.is_dirty = False
-                self.buffer_pool[page_id] = page
+                page.has_unsaved_changes = False
+                self.page_cache[page_number] = page  # Give it a second chance
             else:
                 return  # Evict the clean page by not re-inserting it.
 
-        # Fallback if all pages were dirty: evict the first one that was
-        # processed, which has now been flushed to disk.
-        if self.buffer_pool:
-            self.buffer_pool.popitem(last=False)
+        # Fallback if all pages were dirty: evict the first one processed.
+        if self.page_cache:
+            self.page_cache.popitem(last=False)
