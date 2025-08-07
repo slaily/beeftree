@@ -40,6 +40,9 @@ class Node:
     def has_more_than_minimum_keys(self) -> bool:
         return len(self._keys) > self._min_keys
 
+    def is_at_minimum_capacity(self) -> bool:
+        return len(self._keys) == self._min_keys
+
     def add_key(self, key: int):
         """Adds a key to the node while maintaining sorted order."""
         bisect.insort_left(self._keys, key)
