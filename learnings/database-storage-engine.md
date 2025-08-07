@@ -768,7 +768,7 @@ test_insert_and_split()
 - Subtopic 5.3
 - Subtopic 5.4
 
-#### Practical Exercise 5.1: Deletion with Borrowing and Merging
+#### Practical Exercise 5.1: Deletion with Borrowing and Merging ✅ *Completed: 2025-08-07*
 
 **Section Connection**: This exercise directly applies all subtopics from this section:
 - Deletion from a Leaf Node: The base case for all deletions.
@@ -919,34 +919,136 @@ def test_delete_causing_merge():
 ---
 
 ### Section 6: Performance Analysis and Optimization
-- [ ] Time and space complexity analysis
-- [ ] Cache-friendly design patterns
-- [ ] Bulk loading strategies
-- [ ] Concurrency and locking considerations
+- [ ] **Time and Space Complexity Analysis**
+   - **Core principles**: Understanding the Big O notation for B-Tree operations (Search, Insert, Delete) in terms of both I/O operations and CPU computations. Analyzing the space complexity based on the number of nodes and keys.
+   - **Key terminology**: `O(log_t N)` (I/O complexity), `O(t log_t N)` (CPU complexity), `t` (degree), `N` (number of keys), space complexity `O(N)`.
+   - **Resources**:
+     - [B-Tree Complexity Analysis - Stanford CS166](https://web.stanford.edu/class/cs166/lectures/11/Slides11.pdf) (Slides)
+     - [YouTube: B-Tree Time and Space Complexity](https://www.youtube.com/watch?v=C_q5ccN84C8) by Abdul Bari
+     - [The Ubiquitous B-Tree](https://dl.acm.org/doi/pdf/10.1145/356770.356776) by Douglas Comer (Paper, Section 5)
 
-#### Key Concepts
-- **I/O efficiency**: Minimizing disk reads through optimal node size
-- **Cache locality**: Designing for CPU cache effectiveness
-- **Bulk loading**: Efficient techniques for loading large datasets
-- **Lock coupling**: Concurrency control in multi-user scenarios
-- **Write amplification**: Understanding update costs
+- [ ] **Cache-Friendly Design and Data Locality**
+   - **Core principles**: Aligning B-Tree node size with the disk's page size (e.g., 4KB, 8KB) to ensure a single disk read fetches a full node. Understanding how CPU caches (L1, L2, L3) interact with node data during key searches.
+   - **Key terminology**: Cache line, data locality, pointer chasing, memory alignment, page size.
+   - **Resources**:
+     - [What Every Programmer Should Know About Memory](https://people.freebsd.org/~lstewart/articles/cpumemory.pdf) by Ulrich Drepper (Paper)
+     - [YouTube: CPU Caches and Why They Matter](https://www.youtube.com/watch?v=v-wht-I-6yI) by Code-It-Up
+     - [The Impact of B-Tree Node Size on Performance](https://blog.couchbase.com/btree-performance-node-size/) (Blog Post)
 
-#### Practical Exercise 6.1: Performance Optimization
-Benchmark and optimize your B-tree implementation:
+- [ ] **Bulk Loading Strategies**
+   - **Core principles**: Understanding why inserting keys one-by-one is inefficient for large datasets due to excessive node splitting. Learning the "bottom-up" build approach where leaf nodes are created first from sorted data and internal nodes are built on top.
+   - **Key terminology**: Bulk loading, bottom-up build, sort-then-build, fill factor.
+   - **Resources**:
+     - [How to Bulk Load into a B-tree](https://www.cs.cmu.edu/~christos/courses/826.S02/lectures-PS/bulk.pdf) (Lecture Notes)
+     - [PostgreSQL `CREATE INDEX` Internals](https://www.interdb.jp/pg/pgsql08.html) (Blog Post explaining its bulk load)
 
+- [ ] **Concurrency and Locking Considerations**
+   - **Core principles**: A high-level introduction to the challenges of allowing multiple threads to read and write to the B-Tree simultaneously. Understanding the concept of latches (lightweight locks) on nodes.
+   - **Key terminology**: Concurrency, race condition, latch, lock coupling, optimistic vs. pessimistic locking.
+   - **Resources**:
+     - [Database Internals Ch. 8 - Concurrency Control](https://www.databass.dev/chapters/concurrency-control-i/) (Book Chapter)
+     - [YouTube: B-Tree Latching Explained](https://www.youtube.com/watch?v=tPz-4-c_kG8) by Databaseology
+     - [A Survey of B-Tree Locking Techniques](http://www.vldb.org/conf/1981/P197.PDF) (Paper)
+
+**My answers:**
+- Subtopic 6.1
+- Subtopic 6.2
+- Subtopic 6.3
+- Subtopic 6.4
+
+#### Practical Exercise 6.1: Benchmarking Insert Performance
+
+**Section Connection**: This exercise directly applies the following subtopics from this section:
+- Time and Space Complexity Analysis: Measuring the real-world performance of `O(log N)` insertions.
+- Cache-Friendly Design: Observing how different node sizes (which affect cache alignment) impact performance.
+- Key terminology: IOPS, throughput, latency.
+
+**Real-World Context**: Database engineers constantly run benchmarks like this to tune storage engine parameters for optimal performance on different hardware.
+
+**Micro-Objective**: Write a simple benchmarking script to measure insertion throughput and analyze the impact of node size.
+
+**Mental Model**: Think of this as a time trial for your B-Tree. You're going to make it insert thousands of keys as fast as it can, and you'll use a stopwatch (Python's `time` module) to see how well it performs under different conditions.
+
+**Implementation Constraints**: 
+- ✅ What TO implement: A script that inserts N keys and measures the total time.
+- ❌ What NOT to implement: A complex benchmarking harness with statistical analysis.
+- 🎯 Why these boundaries matter: To focus on the fundamental relationship between an algorithmic parameter (`max_keys_per_node`) and real-world performance.
+
+**Scaffolded Code Template**:
 ```python
-# Expected implementation: Benchmarking suite and optimization techniques
-# Success criteria: Measurable performance improvements, cache-friendly design
+import time
+import os
+import random
+from src.btree import BTree
+
+def benchmark_inserts(db_file: str, num_keys: int, max_keys_per_node: int):
+    if os.path.exists(db_file):
+        os.remove(db_file)
+
+    btree = BTree(db_file, max_keys_per_node=max_keys_per_node)
+    
+    keys_to_insert = list(range(num_keys))
+    random.shuffle(keys_to_insert) # Insert in random order to simulate a real workload
+    
+    start_time = time.time()
+    
+    # TODO: Loop through keys_to_insert and call the btree.insert() method for each key.
+    
+    end_time = time.time()
+    
+    btree.close()
+    
+    duration = end_time - start_time
+    inserts_per_second = num_keys / duration
+    
+    print(f"--- Benchmark Results (max_keys_per_node={max_keys_per_node}) ---")
+    print(f"Inserted {num_keys} keys in {duration:.2f} seconds.")
+    print(f"Throughput: {inserts_per_second:.2f} inserts/second.")
+    print("-" * 40)
+
+if __name__ == "__main__":
+    NUM_KEYS = 10000
+    
+    # TODO: Run the benchmark with at least 3 different values for max_keys_per_node.
+    # For example: 5, 50, and 500.
+    # benchmark_inserts("benchmark1.db", NUM_KEYS, 5)
+    
 ```
 
+**Step-by-Step Guide**:
+1. **Step 1**: Create a new file, e.g., `benchmark.py`.
+2. **Step 2**: Copy the scaffolded code into the new file.
+3. **Step 3**: Implement the main insertion loop inside the `benchmark_inserts` function.
+4. **Step 4**: In the `if __name__ == "__main__"` block, call the `benchmark_inserts` function with different values for `max_keys_per_node` to compare the results.
+5. **Step 5**: Run the script and observe the output. Does a larger node size always mean better performance?
+
+**Single Success Test**:
+- The script runs without errors and prints the throughput for each configuration.
+
+**Common Mistakes to Avoid**:
+- Mistake 1: Inserting keys in sorted order. This creates a "worst-case" B-Tree and doesn't reflect a realistic workload. Always shuffle the keys first.
+- Mistake 2: Forgetting to `close()` the B-Tree. This might mean not all data is flushed to disk, invalidating the timing.
+
+**Debugging Guide**:
+- "If the script is very slow, try reducing `NUM_KEYS` for initial tests."
+- "If you get an error, make sure your `BTree` and its dependencies are correctly imported."
+
 #### Self-Check Quiz 6.1
-1. How does node size affect both I/O performance and memory usage?
-2. What are the trade-offs between read and write performance in B-trees?
-3. How can bulk loading be more efficient than individual insertions?
+1. If a B-Tree holds 1 million keys, and a search requires 3 disk reads, how many disk reads would you roughly expect it to take for 1 billion keys?
+2. Why is it generally a bad idea to set the node size to be much smaller than the disk's page size (e.g., a 500-byte node on a system with 4KB pages)?
+3. You need to load 10 million records into a new B-Tree. What is the key difference between doing this via `insert()` one by one vs. a bulk load?
+4. Two threads try to write to the same B-Tree node at the same time. What is the name of the lightweight lock (or "latch") that a database would use to prevent this?
 
-## Project Goal: A Complete Database Storage Engine
+**My answers:**
+- Question 1
+- Question 2
+- Question 3
+- Question 4
 
-Create a fully functional database storage engine that demonstrates mastery of all concepts:
+---
+
+## Final Project
+Create a fully functional database storage engine that demonstrates mastery of all concepts.
 
 ### Core Requirements
 1. **B+tree index implementation** with all CRUD operations
@@ -966,14 +1068,11 @@ Create a fully functional database storage engine that demonstrates mastery of a
 - Add support for variable-length keys and values
 - Optimize for specific workload patterns (read-heavy vs write-heavy)
 
-## Progress Tracking
-- Use [x] for completed items
-- Use [ ] for pending items
-- Date stamp when sections are completed
+## Resources
+- [Database Internals: A Deep Dive into How Distributed Data Systems Work](https://www.databass.dev/) by Alex Petrov - An essential, modern book on the topic.
+- [Readings in Database Systems (The Red Book)](http://www.redbook.io/) - A collection of seminal papers in database research.
+- [CMU 15-445/645 Intro to Database Systems](https://www.youtube.com/playlist?list=PLSE8ODhjZXjbohkNB6gIu4Q0_sNStx2C1) - A legendary university course available for free on YouTube.
 
-### Next Steps After Completion
-- Study LSM-trees and other storage structures
-- Explore distributed database systems (Spanner, CockroachDB)
-- Learn about query optimization and execution engines
-- Investigate modern storage formats (Parquet, Arrow)
-- Contribute to open-source database projects
+## Progress Tracking
+- Use `[x]` for completed items and `[ ]` for pending items.
+- Add a date stamp, e.g., `✅ *Completed: YYYY-MM-DD*`, when a major section or exercise is finished.
